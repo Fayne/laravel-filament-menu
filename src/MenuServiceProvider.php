@@ -33,11 +33,12 @@ class MenuServiceProvider extends ServiceProvider
                 $registry->register(new MenuReleaseSnapshotProvider);
             }
         });
-        $this->mergeConfigFrom(__DIR__.'/../config/filament-menu.php', 'filament-menu');
     }
 
     public function boot(): void
     {
+        $this->replaceConfigRecursivelyFrom(__DIR__.'/../config/filament-menu.php', 'filament-menu');
+
         Event::listen(PublicationSucceeded::class, function ($event): void {
             foreach ($event->deployment->releaseManifest->entries['menu'] ?? [] as $entry) {
                 $model = config('filament-menu.models.menu');

@@ -2,6 +2,7 @@
 
 namespace Fayne\Menu\Filament\Resources;
 
+use Fayne\Menu\Filament\Concerns\HasResourceConfiguration;
 use Fayne\Menu\Models\MenuComponent;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -17,6 +18,10 @@ use Illuminate\Support\Str;
 
 class MenuComponentResource extends Resource
 {
+    use HasResourceConfiguration;
+
+    protected static string $configurationKey = 'menu_component';
+
     public static function getNavigationLabel(): string
     {
         return __('filament-menu::navigation.menu_components');

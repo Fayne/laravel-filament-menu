@@ -2,6 +2,7 @@
 
 namespace Fayne\Menu\Filament\Resources;
 
+use Fayne\Menu\Filament\Concerns\HasResourceConfiguration;
 use Fayne\Menu\Models\MenuWidget;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -14,6 +15,10 @@ use Filament\Tables\Table;
 
 class MenuWidgetResource extends Resource
 {
+    use HasResourceConfiguration;
+
+    protected static string $configurationKey = 'menu_widget';
+
     public static function getNavigationLabel(): string
     {
         return __('filament-menu::navigation.widgets');

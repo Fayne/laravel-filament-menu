@@ -21,7 +21,7 @@ final class MenuTranslationService
             $gate->authorize('view', $source);
             $gate->authorize('create', $source::class);
             $locale = ContentLocale::resolve($locale);
-            if (! Menu::isMultilingualEnabled()) {
+            if (! config('filament-menu.models.menu')::isMultilingualEnabled()) {
                 throw ValidationException::withMessages(['locale' => __('filament-menu::translations.disabled')]);
             }
             validator(['slug' => $slug], ['slug' => ['required', 'string', 'max:255']])->validate();

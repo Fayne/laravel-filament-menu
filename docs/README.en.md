@@ -31,7 +31,7 @@ php artisan cms:menu:init
 
 `cms:menu:init` initializes the permission catalog and asks whether to create demo data. It does not create administrators or automatically grant super-admin access. This repository's `app:init` is a host command, not part of this package.
 
-Migrations target new databases and retain `nova_*` table names by default; table names and relationship keys are configurable. Assess schema and data migration separately for an existing Nova database. Do not run `migrate:fresh` on business data.
+Migrations target new databases and use `filament_*` table names by default; table names and relationship keys are configurable. Assess schema and data migration separately for an existing Nova database. Do not run `migrate:fresh` on business data.
 
 ## 2. Register the panel and permissions
 
@@ -48,7 +48,68 @@ return $panel->plugins([
 
 Assign menu, item, and definition-management permissions through CMS Core roles and permissions. Platform super-admin access does not bypass tenant membership or content ownership. Initializing permissions does not grant every administrator access.
 
-## 3. Menus and tree editing
+## 3. Extend models, resources, and URIs through configuration
+
+Hosts can replace models, admin Resources, and admin paths independently without editing package source or copying every built-in page. The Nova `models` / `resources` / `uri_key` configuration corresponds to Filament `models` / `resources` / `resource_slugs`.
+
+Create a host model extending the package model:
+
+```php
+namespace App\Models;
+
+class Menu extends \Fayne\Menu\Models\Menu
+{
+}
+```
+
+Then extend the package Resource. This example adds a host field to the original form and stores it in an existing JSON attribute:
+
+```php
+namespace App\Filament\Resources;
+
+use Fayne\Menu\Filament\Resources\MenuResource as BaseMenuResource;
+use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Schema;
+
+class MenuResource extends BaseMenuResource
+{
+    public static function form(Schema $schema): Schema
+    {
+        $schema = parent::form($schema);
+
+        return $schema->components([
+            ...$schema->getComponents(),
+            TextInput::make('settings.project_note'),
+        ]);
+    }
+}
+```
+
+Set the corresponding keys in the published configuration. This is a configuration fragment. Laravel recursively merges configuration: host values take precedence, while omitted nested keys retain package defaults:
+
+```php
+// config/filament-menu.php
+'models' => [
+    'menu' => \App\Models\Menu::class,
+],
+'resources' => [
+    'menu' => \App\Filament\Resources\MenuResource::class,
+],
+'resource_slugs' => [
+    'menu' => 'content-menus',
+],
+```
+
+- Models, Resources, and slugs can be replaced independently. `models` selects model classes; configuration is not inferred from a host Resource's `$model` property.
+- Supported mapping keys are `menu`, `menu_item`, `menu_component`, `menu_component_field`, `menu_widget`, `menu_widget_field`. Items, components, widgets, and fields can each be replaced. Custom classes should extend their corresponding package classes and preserve tenant, language, relationship, content, and authorization contracts.
+- The plugin registers configured Resources; built-in lists, creation, editing, and relationship entry points follow them. Language switching and MenuTree do not redirect back to default Resources. Inherit `getPages()` or override it to replace individual pages.
+- `resource_slugs` is empty by default. Without an entry, Filament's native `$slug`, default inference, and Panel ResourceConfiguration remain effective. Explicit configuration takes priority when inheriting the package method. A host overriding `getSlug()` without calling its parent is responsible for honoring configuration itself.
+- `content-menus` changes the admin Resource path, for example `/admin/content-menus`, not frontend content paths or Headless APIs. Customize navigation labels, groups, tables, and actions through native Filament overrides.
+- Keep registration through `MenuPlugin`. When using Resource auto-discovery, avoid discovering/registering both the default and replacement classes. Register custom policies through Laravel, with the appropriate host provider order, without bypassing authorization scopes.
+
+After changes, clear and regenerate configuration/route caches through the deployment process and restart long-running processes. Older published configuration can add these keys; omitted model/Resource defaults are filled automatically. No business-table or content-format changes are required.
+
+## 4. Menus and tree editing
 
 1. Create a menu with its name, slug, content language, and allowed depth.
 2. Create items with names, URLs, link targets, and active states. Item language comes from the owning menu.
@@ -64,7 +125,7 @@ Assign menu, item, and definition-management permissions through CMS Core roles 
 
 Effective depth is constrained by package configuration, menu depth, and component restrictions. The server validates the complete node set, relationships, menu/language ownership, and depth instead of trusting browser ordering.
 
-## 4. Chinese, English, and content languages
+## 5. Chinese, English, and content languages
 
 The interface provides `zh_CN` and `en`. Administrator interface language is independent of menu content language; global or tenant content languages are configured in Core.
 
@@ -77,7 +138,7 @@ The interface provides `zh_CN` and `en`. Administrator interface language is ind
 
 The list groups menus by translation group. Switch existing translations on the edit or tree page; the current language is excluded, and a single alternative opens directly. **Create translation** is hidden when all supported versions exist. Each version has its own items and hierarchy; edits do not automatically translate or synchronize another version. Supply localized component names, field labels, and menu text yourself.
 
-## 5. E-commerce demo data
+## 6. E-commerce demo data
 
 ```bash
 php artisan cms:menu:init
@@ -89,7 +150,7 @@ Demo creation defaults to no and requires an explicit interactive choice. In ten
 
 `Fayne\Menu\Database\Seeders\DemoMenuSeeder` creates English and Simplified Chinese versions of `demo-main-navigation` and `demo-footer-navigation`, with sample categories, account links, and shopping information. Supported languages must include `en` and `zh_CN`/`zh-CN`; the seeder does not change language settings. Menus start inactive while sample items are active. An existing slug in either language causes the whole group to be skipped without overwriting edits. This creates navigation data, not products, orders, or destination pages.
 
-## 6. Frontend APIs, builds, and previews
+## 7. Frontend APIs, builds, and previews
 
 | Purpose | Request | Behavior |
 | --- | --- | --- |
@@ -109,13 +170,13 @@ curl -H "Authorization: Bearer $CMS_BUILD_API_TOKEN" \
 
 Frozen reads require a valid token and a manifest tenant matching the request domain. Legacy manifests without tenant ownership are rejected and must be republished. Keep build credentials on the server. Static builds should read Page, Menu, and settings from the same release ID. Live menus read current edited records and are not guaranteed to reflect only the last release. `frozen` means a build candidate, not a successful deployment.
 
-## 7. Component content and extension
+## 8. Component content and extension
 
 Manage additional item content through Components, Widgets, and their fields using stable Page Builder resolver identifiers. The content builder is hidden when no Component definitions exist.
 
 Use `filament-menu.models`, `tables`, and `foreign_keys` to replace models or map storage. Custom models must preserve data, language, tenant, and authorization contracts. `internal_path_suggestion_route` names a host-defined internal-path suggestion route. Disabling `use_default_frontend_routes` disables the default live/preview routes, not the separately registered frozen release endpoint. See [Page Builder](../../laravel-filament-page-builder/docs/README.en.md) for complex fields.
 
-## 8. Tests and deployment
+## 9. Tests and deployment
 
 Run in this package directory:
 
@@ -126,6 +187,8 @@ composer format
 ```
 
 Drag tests live in Nestable: `node --test tests/drag-preview.test.cjs`. Package tests do not replace target-database, real editor drag/save, tenant isolation, frontend build, or publication callback acceptance. Ship all local dependencies, refresh configuration/route caches, and restart long-running processes. Do not run destructive development-host initialization in production.
+
+The library does not commit `composer.lock`; local generated lock files are ignored. Host applications should retain their own lock file for production deployment.
 
 ## Contributing
 
@@ -138,3 +201,7 @@ Drag tests live in Nestable: `node --test tests/drag-preview.test.cjs`. Package 
 ## License
 
 This software uses a [proprietary license](../LICENSE.md). Use and distribution are subject to its authorization restrictions.
+
+## Whole-site frozen API v2
+
+With Core publication routing configured, `/headless/releases/{release_id}/menus` reads the immutable public bundle, independent of current region, locale or routing settings. Authenticate with the build Bearer token through the owning tenant domain. Menu reads require an explicit `scope_id` when multiple scopes are available; optional `target_id` must match it. Unknown or incompatible scopes/targets return 422. Each response contains only that frozen scope and its resolved public links; it excludes internal translation-group and connection metadata. V1 API responses remain compatible.

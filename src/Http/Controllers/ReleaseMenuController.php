@@ -20,7 +20,7 @@ final class ReleaseMenuController extends Controller
         app(FrozenReleaseAccess::class)->authorize($request, $manifest);
 
         return response()->json([
-            'data' => collect($manifest->entries['menu'] ?? [])->map(fn ($entry) => Arr::except($entry, ['comparison_projection', 'connection']))->values(),
+            'data' => collect(app(\Fayne\CMS\Publishing\FrozenReleaseEntries::class)->select($manifest, $request, 'menu', true))->map(fn ($entry) => Arr::except($entry, ['comparison_projection', 'connection', 'content_snapshot', 'translation_group_id']))->values(),
         ]);
     }
 }

@@ -3,6 +3,7 @@
 namespace Fayne\Menu\Filament\Resources\MenuItemResource\Pages;
 
 use Fayne\CMS\Filament\Operations\CreateRecord;
+use Fayne\Menu\Filament\Concerns\ResolvesConfiguredResource;
 use Fayne\Menu\Filament\Resources\MenuItemResource;
 use Fayne\Menu\Services\MenuItemService;
 use Illuminate\Database\Eloquent\Model;
@@ -10,6 +11,8 @@ use Illuminate\Validation\ValidationException;
 
 class CreateMenuItem extends CreateRecord
 {
+    use ResolvesConfiguredResource;
+
     protected static string $resource = MenuItemResource::class;
 
     protected function handleRecordCreation(array $data): Model

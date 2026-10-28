@@ -19,7 +19,7 @@ class MenuPlugin implements Plugin
 
     public function register(Panel $panel): void
     {
-        $panel->resources([Resources\MenuResource::class, Resources\MenuItemResource::class, Resources\MenuComponentResource::class, Resources\MenuComponentFieldResource::class, Resources\MenuWidgetResource::class, Resources\MenuWidgetFieldResource::class]);
+        $panel->resources([Resources\MenuResource::configuredResource(), Resources\MenuItemResource::configuredResource(), Resources\MenuComponentResource::configuredResource(), Resources\MenuComponentFieldResource::configuredResource(), Resources\MenuWidgetResource::configuredResource(), Resources\MenuWidgetFieldResource::configuredResource()]);
     }
 
     public function boot(Panel $panel): void {}

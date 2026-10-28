@@ -3,6 +3,7 @@
 namespace Fayne\Menu\Filament\Resources;
 
 use Fayne\CMS\Support\ContentLocale;
+use Fayne\Menu\Filament\Concerns\HasResourceConfiguration;
 use Fayne\Menu\Filament\Pages\MenuTree;
 use Fayne\Menu\Models\Menu;
 use Filament\Actions\Action;
@@ -23,6 +24,10 @@ use Illuminate\Support\Facades\Gate;
 
 class MenuResource extends Resource
 {
+    use HasResourceConfiguration;
+
+    protected static string $configurationKey = 'menu';
+
     public static function getNavigationLabel(): string
     {
         return __('filament-menu::navigation.menus');
@@ -49,12 +54,12 @@ class MenuResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->when(! Menu::isMultilingualEnabled(), fn ($query) => $query->where('locale', ContentLocale::default()));
+        return parent::getEloquentQuery()->when(! config('filament-menu.models.menu')::isMultilingualEnabled(), fn ($query) => $query->where('locale', ContentLocale::default()));
     }
 
     public static function form(Schema $schema): Schema
     {
-        return $schema->components([TextInput::make('name')->label(__('filament-menu::ui.field_name'))->required()->maxLength(255), TextInput::make('slug')->label(__('filament-menu::ui.field_slug'))->required()->maxLength(255), Textarea::make('description')->label(__('filament-menu::ui.field_description')), TextInput::make('deep')->label(__('filament-menu::ui.field_deep'))->numeric()->minValue(1)->maxValue(config('filament-menu.menu_builder.max_depth', 5)), Select::make('locale')->label(__('filament-menu::translations.locale'))->options(fn () => Menu::isMultilingualEnabled() ? ContentLocale::supported() : [ContentLocale::default() => ContentLocale::supported()[ContentLocale::default()]])->required()->default(fn () => ContentLocale::default())->disabled(fn ($record) => $record !== null)->dehydrated(fn ($record) => $record === null), Toggle::make('is_active')->label(__('filament-menu::ui.field_is_active'))->default(false)]);
+        return $schema->components([TextInput::make('name')->label(__('filament-menu::ui.field_name'))->required()->maxLength(255), TextInput::make('slug')->label(__('filament-menu::ui.field_slug'))->required()->maxLength(255), Textarea::make('description')->label(__('filament-menu::ui.field_description')), TextInput::make('deep')->label(__('filament-menu::ui.field_deep'))->numeric()->minValue(1)->maxValue(config('filament-menu.menu_builder.max_depth', 5)), Select::make('locale')->label(__('filament-menu::translations.locale'))->options(fn () => config('filament-menu.models.menu')::isMultilingualEnabled() ? ContentLocale::supported() : [ContentLocale::default() => ContentLocale::supported()[ContentLocale::default()]])->required()->default(fn () => ContentLocale::default())->disabled(fn ($record) => $record !== null)->dehydrated(fn ($record) => $record === null), Toggle::make('is_active')->label(__('filament-menu::ui.field_is_active'))->default(false)]);
     }
 
     public static function table(Table $table): Table
@@ -80,7 +85,7 @@ class MenuResource extends Resource
             ])
             ->filters([
                 SelectFilter::make('locale')->label(__('filament-menu::translations.locale'))
-                    ->options(fn (): array => Menu::isMultilingualEnabled() ? ContentLocale::supported() : [ContentLocale::default() => ContentLocale::supported()[ContentLocale::default()]])
+                    ->options(fn (): array => config('filament-menu.models.menu')::isMultilingualEnabled() ? ContentLocale::supported() : [ContentLocale::default() => ContentLocale::supported()[ContentLocale::default()]])
                     ->query(fn (Builder $query, array $data): Builder => $query->when(
                         filled($data['value'] ?? null),
                         fn (Builder $query): Builder => $query->whereHas('translationVariants', fn (Builder $variants): Builder => $variants->where('locale', $data['value'])),

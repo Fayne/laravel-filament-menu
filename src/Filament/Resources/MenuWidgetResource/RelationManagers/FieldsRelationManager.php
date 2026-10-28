@@ -8,4 +8,9 @@ use Fayne\PageBuilder\Filament\RelationManagers\DefinitionFieldsRelationManager;
 class FieldsRelationManager extends DefinitionFieldsRelationManager
 {
     protected static ?string $relatedResource = MenuWidgetFieldResource::class;
+
+    public static function getRelatedResource(): ?string
+    {
+        return MenuWidgetFieldResource::configuredResource();
+    }
 }

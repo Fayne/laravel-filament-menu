@@ -5,6 +5,7 @@ namespace Fayne\Menu\Filament\Pages;
 use Fayne\CMS\Support\ContentLocale;
 use Fayne\FilamentNestable\Filament\Pages\TreePage;
 use Fayne\FilamentNestable\Support\TreeDefinition;
+use Fayne\Menu\Filament\Concerns\ResolvesConfiguredResource;
 use Fayne\Menu\Filament\Resources\MenuItemResource;
 use Fayne\Menu\Filament\Resources\MenuResource;
 use Fayne\Menu\Services\MenuItemService;
@@ -21,6 +22,7 @@ use Illuminate\Support\Js;
 class MenuTree extends TreePage
 {
     use InteractsWithRecord;
+    use ResolvesConfiguredResource;
 
     protected static string $resource = MenuResource::class;
 
@@ -65,7 +67,7 @@ class MenuTree extends TreePage
                 $targets = $this->otherLanguageTargets();
                 $target = $targets->count() === 1 ? $targets->first() : $targets->firstWhere('locale', $data['locale'] ?? null);
                 abort_unless($target, 403);
-                $this->redirect(MenuResource::getUrl('tree', ['record' => $target]));
+                $this->redirect(MenuResource::configuredResource()::getUrl('tree', ['record' => $target]));
             })];
     }
 
@@ -81,12 +83,12 @@ class MenuTree extends TreePage
 
     public function canAddChild(array $node): bool
     {
-        return Gate::allows('create', MenuItemResource::getModel()) && $node['depth'] < $this->treeDefinition()->maxDepth;
+        return Gate::allows('create', MenuItemResource::configuredResource()::getModel()) && $node['depth'] < $this->treeDefinition()->maxDepth;
     }
 
     public function canAddSibling(array $node): bool
     {
-        return Gate::allows('create', MenuItemResource::getModel());
+        return Gate::allows('create', MenuItemResource::configuredResource()::getModel());
     }
 
     public function deletionDisabledReason(array $node): ?string
@@ -104,14 +106,14 @@ class MenuTree extends TreePage
     {
         return Action::make('createNode')->label(__('filament-menu::ui.add_root_menu_item'))->icon('heroicon-o-plus')
             ->modalHeading(fn (array $arguments): string => isset($arguments['after']) ? __('filament-nestable::ui.add_sibling') : (isset($arguments['parent']) ? __('filament-nestable::ui.add_child') : __('filament-menu::ui.add_root_menu_item')))
-            ->visible(fn () => Gate::allows('create', MenuItemResource::getModel()))
+            ->visible(fn () => Gate::allows('create', MenuItemResource::configuredResource()::getModel()))
             ->schema([
                 TextInput::make('name')->label(__('filament-menu::ui.field_name'))->required()->maxLength(255),
                 TextInput::make('url')->label(__('filament-menu::ui.field_url'))->maxLength(255),
                 Toggle::make('is_active')->label(__('filament-menu::ui.field_is_active'))->default(false),
             ])->action(function (array $data, array $arguments): void {
                 $this->authorizeTreeAccess();
-                Gate::authorize('create', MenuItemResource::getModel());
+                Gate::authorize('create', MenuItemResource::configuredResource()::getModel());
                 $parent = isset($arguments['parent']) ? $this->record->menuItems()->findOrFail($arguments['parent']) : null;
                 $after = isset($arguments['after']) ? $this->record->menuItems()->findOrFail($arguments['after']) : null;
                 app(MenuItemService::class)->create([

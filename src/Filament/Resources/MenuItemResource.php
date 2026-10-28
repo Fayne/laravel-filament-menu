@@ -4,7 +4,7 @@ namespace Fayne\Menu\Filament\Resources;
 
 use Fayne\AdvancedText\Forms\Components\AdvancedText;
 use Fayne\CMS\Support\ContentLocale;
-use Fayne\Menu\Models\Menu;
+use Fayne\Menu\Filament\Concerns\HasResourceConfiguration;
 use Fayne\Menu\Models\MenuItem;
 use Fayne\Menu\Services\MenuItemService;
 use Fayne\PageBuilder\Filament\Forms\Components\ContentBuilder;
@@ -25,6 +25,10 @@ use Illuminate\Support\Facades\Route;
 
 class MenuItemResource extends Resource
 {
+    use HasResourceConfiguration;
+
+    protected static string $configurationKey = 'menu_item';
+
     public static function getNavigationLabel(): string
     {
         return __('filament-menu::navigation.menu_items');
@@ -51,7 +55,7 @@ class MenuItemResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->when(! Menu::isMultilingualEnabled(), fn ($query) => $query->where('locale', ContentLocale::default()));
+        return parent::getEloquentQuery()->when(! config('filament-menu.models.menu')::isMultilingualEnabled(), fn ($query) => $query->where('locale', ContentLocale::default()));
     }
 
     public static function form(Schema $schema): Schema
@@ -60,11 +64,11 @@ class MenuItemResource extends Resource
         $suggestionUrl = is_string($suggestionRoute) && Route::has($suggestionRoute) ? route($suggestionRoute) : null;
         $definitions = new EloquentContentDefinitions(config('filament-menu.models.menu_component'), config('filament-menu.models.menu_widget'));
 
-        return $schema->components([Select::make(config('filament-menu.foreign_keys.menu_id', 'menu_id'))->options(fn () => MenuResource::getEloquentQuery()->pluck('name', 'id'))->required()->live()
-            ->afterStateUpdated(fn ($state, Set $set) => $set('locale', MenuResource::getEloquentQuery()->find($state)?->locale ?? ContentLocale::default())),
+        return $schema->components([Select::make(config('filament-menu.foreign_keys.menu_id', 'menu_id'))->options(fn () => MenuResource::configuredResource()::getEloquentQuery()->pluck('name', 'id'))->required()->live()
+            ->afterStateUpdated(fn ($state, Set $set) => $set('locale', MenuResource::configuredResource()::getEloquentQuery()->find($state)?->locale ?? ContentLocale::default())),
             TextInput::make('name')->label(__('filament-menu::ui.field_name'))->required()->maxLength(255), AdvancedText::make('url')->label(__('filament-menu::ui.field_url'))->remoteOptionsUrl($suggestionUrl)->maxLength(255), Select::make('target')->label(__('filament-menu::ui.field_target'))->options(['_self' => __('filament-menu::ui.current_window'), '_blank' => __('filament-menu::ui.new_window')])->default('_self')->required(),
             Select::make('locale')->label(__('filament-menu::ui.field_locale'))->options(fn () => ContentLocale::supported())->disabled()->dehydrated(false)->validatedWhenNotDehydrated(false)
-                ->default(fn (Get $get) => MenuResource::getEloquentQuery()->find($get(config('filament-menu.foreign_keys.menu_id', 'menu_id')))?->locale ?? ContentLocale::default()),
+                ->default(fn (Get $get) => MenuResource::configuredResource()::getEloquentQuery()->find($get(config('filament-menu.foreign_keys.menu_id', 'menu_id')))?->locale ?? ContentLocale::default()),
             Toggle::make('is_active')->label(__('filament-menu::ui.field_is_active'))->default(false), TextInput::make('icon')->label(__('filament-menu::ui.field_icon')), TextInput::make('css_class')->label(__('filament-menu::ui.field_css_class')),
             ContentBuilder::make('content')->label(__('filament-menu::ui.field_content'))->definitions($definitions, $definitions->layouts(), $definitions->layouts(true))->visible(fn (): bool => $definitions->layouts() !== [])->columnSpanFull(),
         ]);

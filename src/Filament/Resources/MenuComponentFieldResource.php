@@ -3,6 +3,7 @@
 namespace Fayne\Menu\Filament\Resources;
 
 use Fayne\CMS\Support\ContentFieldTypes;
+use Fayne\Menu\Filament\Concerns\HasResourceConfiguration;
 use Fayne\Menu\Models\MenuComponentField;
 use Fayne\PageBuilder\Filament\Forms\FieldDefinitionSchema;
 use Filament\Actions\DeleteAction;
@@ -14,6 +15,10 @@ use Filament\Tables\Table;
 
 class MenuComponentFieldResource extends Resource
 {
+    use HasResourceConfiguration;
+
+    protected static string $configurationKey = 'menu_component_field';
+
     public static function getNavigationLabel(): string
     {
         return __('filament-menu::navigation.component_fields');
@@ -41,7 +46,7 @@ class MenuComponentFieldResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->components([
-            FieldDefinitionSchema::owner('nova_menu_component_id', config('filament-menu.models.menu_component'), MenuComponentResource::class, __('filament-menu::ui.owning_component')),
+            FieldDefinitionSchema::owner('nova_menu_component_id', config('filament-menu.models.menu_component'), MenuComponentResource::configuredResource(), __('filament-menu::ui.owning_component')),
             ...static::fieldFormComponents(),
         ]);
     }

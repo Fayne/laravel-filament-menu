@@ -31,7 +31,7 @@ final class MenuTreeService
                 }
                 app(MenuContentValidator::class)->validate($menu, $item->content ?? [], $depth);
             },
-            editUrl: fn ($item) => Gate::allows('update', $item) ? MenuItemResource::getUrl('edit', ['record' => $item]) : null,
+            editUrl: fn ($item) => Gate::allows('update', $item) ? MenuItemResource::configuredResource()::getUrl('edit', ['record' => $item]) : null,
         );
     }
 
