@@ -1,0 +1,11 @@
+<?php
+
+namespace Fayne\Menu\Filament\Resources\MenuWidgetResource\Pages;
+
+use Fayne\CMS\Filament\Operations\CreateRecord;
+use Fayne\Menu\Filament\Resources\MenuWidgetResource;
+
+class CreateMenuWidget extends CreateRecord
+{
+    protected static string $resource = MenuWidgetResource::class;
+}
