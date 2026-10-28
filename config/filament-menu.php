@@ -14,8 +14,8 @@ return [
         'menu_widget' => MenuWidget::class, 'menu_widget_field' => MenuWidgetField::class,
     ],
     'tables' => [
-        'menus' => 'nova_menus', 'menu_items' => 'nova_menu_items', 'menu_components' => 'nova_menu_components',
-        'menu_component_fields' => 'nova_menu_component_fields', 'menu_widgets' => 'nova_menu_widgets', 'menu_widget_fields' => 'nova_menu_widget_fields',
+        'menus' => 'filament_menus', 'menu_items' => 'filament_menu_items', 'menu_components' => 'filament_menu_components',
+        'menu_component_fields' => 'filament_menu_component_fields', 'menu_widgets' => 'filament_menu_widgets', 'menu_widget_fields' => 'filament_menu_widget_fields',
     ],
     'foreign_keys' => ['menu_id' => 'menu_id', 'parent_id' => 'parent_id'],
     'menu_builder' => ['max_depth' => 5],
