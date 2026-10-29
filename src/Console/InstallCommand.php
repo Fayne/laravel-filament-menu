@@ -6,21 +6,39 @@ use Fayne\CMS\Models\Tenant;
 use Fayne\CMS\Support\ContentLocale;
 use Fayne\CMS\Support\TenantContext;
 use Fayne\Menu\Database\Seeders\DemoMenuSeeder;
-use Fayne\Menu\Database\Seeders\InitializeRolesAndPermissionsSeeder;
+use Fayne\Menu\Models\Menu;
+use Illuminate\Console\ConfirmableTrait;
 use Illuminate\Console\Command;
 use Illuminate\Validation\ValidationException;
 
-class InitializeCommand extends Command
+class InstallCommand extends Command
 {
-    protected $signature = 'cms:menu:init {--tenant= : Target tenant ID or slug for optional demo data}';
+    use ConfirmableTrait;
 
-    protected $description = 'Initialize menu permissions and optionally create bilingual e-commerce demo data.';
+    protected $signature = 'cms:menu:install {--demo : Create unpublished bilingual demo content} {--tenant= : Target tenant ID or slug for demo data} {--force : Allow installation in production}';
+
+    protected $description = 'Install the Menu module; optionally create unpublished bilingual demo menus.';
 
     public function handle(): int
     {
-        $status = $this->call('db:seed', ['--class' => InitializeRolesAndPermissionsSeeder::class]);
-        if ($status !== self::SUCCESS || ! $this->input->isInteractive() || ! $this->confirm(__('filament-menu::commands.confirm_demo'), false)) {
-            return $status;
+        if (! $this->confirmToProceed()) {
+            return self::FAILURE;
+        }
+        if (! $this->option('demo') && $this->option('tenant') !== null) {
+            $this->error(__('filament-menu::commands.tenant_requires_demo'));
+
+            return self::FAILURE;
+        }
+        $model = config('filament-menu.models.menu', Menu::class);
+        if (! (new $model)->getConnection()->getSchemaBuilder()->hasTable((new $model)->getTable())) {
+            $this->error(__('filament-menu::commands.install_core_first'));
+
+            return self::FAILURE;
+        }
+        if (! $this->option('demo')) {
+            $this->info(__('filament-menu::commands.installed'));
+
+            return self::SUCCESS;
         }
 
         try {
@@ -39,7 +57,7 @@ class InitializeCommand extends Command
             }
 
             foreach ($tenants as $tenant) {
-                $this->line($tenant->name.' ('.$tenant->slug.')');
+                $this->line($tenant->name);
                 $status = app(TenantContext::class)->run($tenant, fn (): int => $this->seedDemo());
                 if ($status !== self::SUCCESS) {
                     return $status;
@@ -66,21 +84,30 @@ class InitializeCommand extends Command
 
             return $tenant ? [$tenant] : [];
         }
+        if (! $this->input->isInteractive()) {
+            $this->error(__('filament-menu::commands.tenant_required'));
+
+            return [];
+        }
         $tenants = $query->orderBy('id')->get();
         if ($tenants->isEmpty()) {
             $this->error(__('filament-menu::commands.tenant_not_found'));
 
             return [];
         }
-        $labels = $tenants->mapWithKeys(fn (Tenant $tenant): array => [$tenant->id => $tenant->name.' ('.$tenant->slug.')']);
-        $selected = $this->choice(__('filament-menu::commands.select_tenant'), $labels->values()->all(), multiple: true);
+        $labels = $tenants->mapWithKeys(fn (Tenant $tenant): array => [$tenant->id => $tenant->name]);
+        $selected = \Laravel\Prompts\multiselect(
+            label: __('filament-menu::commands.select_tenant'),
+            options: $labels->all(),
+            required: true,
+        );
 
-        return $tenants->whereIn('id', $labels->filter(fn ($label) => in_array($label, $selected, true))->keys())->all();
+        return $tenants->whereIn('id', $selected)->all();
     }
 
     private function seedDemo(): int
     {
-        $status = $this->call('db:seed', ['--class' => DemoMenuSeeder::class]);
+        $status = $this->call('db:seed', ['--force' => true, '--class' => DemoMenuSeeder::class]);
         if ($status === self::SUCCESS) {
             $this->info(__('filament-menu::commands.demo_ready'));
             if (! ContentLocale::enabled()) {

@@ -1,7 +1,11 @@
 <?php
 
 return [
-    'confirm_demo' => '是否创建中英文电商演示菜单？',
+    'tenant_requires_demo' => '--tenant 参数需要同时使用 --demo。',
+    'install_core_first' => '请先运行 cms:install 完成基础安装。',
+    'installed' => 'Menu 安装就绪，未创建演示数据。',
+    'tenant_required' => '多租户非交互演示安装必须指定 --tenant。',
+
     'select_tenant' => '选择创建演示菜单的租户（可多选）',
     'tenant_not_found' => '未找到符合条件的启用租户，请先创建租户或检查 --tenant 参数。',
     'tenancy_disabled' => '只有开启租户模式后才能使用 --tenant 参数。',

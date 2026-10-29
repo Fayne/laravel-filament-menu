@@ -74,22 +74,22 @@ it('rejects unsupported bilingual settings before writing any demo content', fun
     expect(Menu::count())->toBe(0)->and(MenuItem::count())->toBe(0);
 });
 
-it('asks before creating test data and leaves content untouched when declined', function () {
-    $this->artisan('cms:menu:init')
-        ->expectsConfirmation(__('filament-menu::commands.confirm_demo'), 'no')->assertSuccessful();
+it('leaves content untouched during default installation', function () {
+    $this->artisan('cms:menu:install')
+        ->assertSuccessful();
     expect(Menu::count())->toBe(0);
 });
 
-it('creates demo data in the explicitly selected tenant only after confirmation', function () {
+it('creates demo data in the explicitly selected tenant only when explicitly requested', function () {
     $other = Tenant::create(['name' => 'Other', 'slug' => 'other']);
-    $this->artisan('cms:menu:init', ['--tenant' => $other->slug])
-        ->expectsConfirmation(__('filament-menu::commands.confirm_demo'), 'yes')->assertSuccessful();
+    $this->artisan('cms:menu:install', ['--demo' => true, '--tenant' => $other->slug])
+        ->assertSuccessful();
     expect(Menu::count())->toBe(0);
     app(TenantContext::class)->run($other, fn () => expect(Menu::count())->toBe(4));
 });
 
 it('does not create demo content during noninteractive initialization', function () {
-    $this->artisan('cms:menu:init', ['--no-interaction' => true])->assertSuccessful();
+    $this->artisan('cms:menu:install', ['--no-interaction' => true])->assertSuccessful();
     expect(Menu::count())->toBe(0);
 });
 
@@ -97,12 +97,11 @@ it('asks which tenant receives demo data when run without an existing tenant con
     $tenant = Tenant::create(['name' => 'Shop', 'slug' => 'shop']);
     $second = Tenant::create(['name' => 'Second', 'slug' => 'second']);
     $unselected = Tenant::create(['name' => 'Unselected', 'slug' => 'unselected']);
-    $labels = Tenant::where('is_active', true)->orderBy('id')->get()->map(fn ($tenant) => $tenant->name.' ('.$tenant->slug.')')->all();
+    $labels = Tenant::where('is_active', true)->orderBy('id')->get()->mapWithKeys(fn ($tenant) => [$tenant->id => $tenant->name])->all();
     Context::forget('filament-cms.tenant_id');
 
-    $this->artisan('cms:menu:init')
-        ->expectsConfirmation(__('filament-menu::commands.confirm_demo'), 'yes')
-        ->expectsChoice(__('filament-menu::commands.select_tenant'), ['Shop (shop)', 'Second (second)'], $labels)->assertSuccessful();
+    $this->artisan('cms:menu:install', ['--demo' => true])
+        ->expectsChoice(__('filament-menu::commands.select_tenant'), [$tenant->id, $second->id], $labels)->assertSuccessful();
 
     expect(app(TenantContext::class)->id())->toBeNull();
     app(TenantContext::class)->run($tenant, fn () => expect(Menu::count())->toBe(4));
@@ -111,15 +110,14 @@ it('asks which tenant receives demo data when run without an existing tenant con
 });
 
 it('rejects an unknown tenant without falling back to the current tenant', function () {
-    $this->artisan('cms:menu:init', ['--tenant' => 'missing-shop'])
-        ->expectsConfirmation(__('filament-menu::commands.confirm_demo'), 'yes')->assertFailed();
+    $this->artisan('cms:menu:install', ['--demo' => true, '--tenant' => 'missing-shop'])
+        ->assertFailed();
     expect(Menu::count())->toBe(0);
 });
 
 it('supports single-site initialization without creating a tenant', function () {
     config(['filament-cms.tenancy.enabled' => false]);
-    $this->artisan('cms:menu:init')
-        ->expectsConfirmation(__('filament-menu::commands.confirm_demo'), 'yes')->assertSuccessful();
+    $this->artisan('cms:menu:install', ['--demo' => true])->assertSuccessful();
 
     expect(Menu::count())->toBe(4)->and(Menu::where('tenant_id', 0)->count())->toBe(4);
 });

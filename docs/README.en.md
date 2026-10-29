@@ -24,14 +24,16 @@ Configure host authentication, panels, and permissions using [CMS Core](../../la
 ```bash
 composer require fayne/laravel-filament-menu
 php artisan vendor:publish --tag=filament-menu-config
-php artisan migrate
+php artisan cms:install
 php artisan filament:assets
-php artisan cms:menu:init
+php artisan cms:menu:install
 ```
 
-`cms:menu:init` initializes the permission catalog and asks whether to create demo data. It does not create administrators or automatically grant super-admin access. This repository's `app:init` is a host command, not part of this package.
+`cms:menu:install` checks that the module schema is ready and creates no content by default. First run `cms:install`, which owns migrations and global permission initialization. Only explicit `--demo` creates unpublished bilingual demo content; there is no additional demo confirmation prompt. Production requires confirmation or `--force`. No administrator is created or granted privileges. `app:init` and `admin:create` are host commands.
 
 Migrations target new databases and use `filament_*` table names by default; table names and relationship keys are configurable. Assess schema and data migration separately for an existing Nova database. Do not run `migrate:fresh` on business data.
+
+This module owns its permission definitions in [`resources/permissions.php`](../resources/permissions.php). Its service provider registers them with Core's `PermissionRegistry`; Core no longer hardcodes this module's permissions. `cms:install` aggregates registered modules and creates initial roles. Existing roles are not silently expanded when adding a module; explicitly assign new permissions. See [permission extensions](../../laravel-filament-cms-core/docs/permission-registration.en.md).
 
 ## 2. Register the panel and permissions
 
@@ -141,12 +143,13 @@ The list groups menus by translation group. Switch existing translations on the 
 ## 6. E-commerce demo data
 
 ```bash
-php artisan cms:menu:init
-php artisan cms:menu:init --tenant=shop
-php artisan cms:menu:init --no-interaction
+php artisan cms:menu:install
+php artisan cms:menu:install --demo
+php artisan cms:menu:install --demo --tenant=shop
+php artisan cms:menu:install --no-interaction
 ```
 
-Demo creation defaults to no and requires an explicit interactive choice. In tenant mode, `--tenant` accepts an active tenant ID or slug; without it, a trusted current context takes priority, otherwise multiple tenants can be selected. Omit `--tenant` for a single site. Non-interactive runs only initialize permissions.
+Default and unattended installation create no demos. Explicit `--demo` works interactively or in automation. `--tenant` requires `--demo` and accepts an active tenant ID or slug. Unattended tenant demos require a target; interactive runs can use a trusted context or select active tenants. Single-site mode rejects `--tenant` and writes to scope 0. Demo errors return failure without rolling back the completed base installation.
 
 `Fayne\Menu\Database\Seeders\DemoMenuSeeder` creates English and Simplified Chinese versions of `demo-main-navigation` and `demo-footer-navigation`, with sample categories, account links, and shopping information. Supported languages must include `en` and `zh_CN`/`zh-CN`; the seeder does not change language settings. Menus start inactive while sample items are active. An existing slug in either language causes the whole group to be skipped without overwriting edits. This creates navigation data, not products, orders, or destination pages.
 

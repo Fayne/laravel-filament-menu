@@ -24,14 +24,16 @@
 ```bash
 composer require fayne/laravel-filament-menu
 php artisan vendor:publish --tag=filament-menu-config
-php artisan migrate
+php artisan cms:install
 php artisan filament:assets
-php artisan cms:menu:init
+php artisan cms:menu:install
 ```
 
-`cms:menu:init` 初始化权限目录，并询问是否创建演示数据；它不创建管理员或自动授予超级管理员权限。本仓库的 `app:init` 是宿主命令，不属于本包。
+`cms:menu:install` 检查模块表结构是否就绪，默认不生成内容；请先运行 `cms:install`，由 Core 统一执行迁移和权限初始化。仅显式传入 `--demo` 才创建未发布的中英文演示内容，不再询问是否生成示例。生产环境需确认或使用 `--force`。不创建管理员或自动授予账号权限。`app:init`、`admin:create` 是宿主命令。
 
 迁移面向全新数据库，默认使用 `filament_*` 表名；表名及关联键可配置。旧 Nova 数据库需另行评估结构和数据迁移，不要在业务库使用 `migrate:fresh`。
+
+本包权限由 [`resources/permissions.php`](resources/permissions.php) 自行定义，Service Provider 注册到 Core 的 `PermissionRegistry`；Core 不再硬编码本模块权限。运行 `cms:install` 汇总已注册模块并创建默认角色。已有角色不自动扩权；新增模块后须明确配置新增授权。详见 [权限扩展](../laravel-filament-cms-core/docs/permission-registration.md)。
 
 ## 2. 注册后台与权限
 
@@ -141,12 +143,13 @@ class MenuResource extends BaseMenuResource
 ## 6. 电商演示数据
 
 ```bash
-php artisan cms:menu:init
-php artisan cms:menu:init --tenant=shop
-php artisan cms:menu:init --no-interaction
+php artisan cms:menu:install
+php artisan cms:menu:install --demo
+php artisan cms:menu:install --demo --tenant=shop
+php artisan cms:menu:install --no-interaction
 ```
 
-演示数据默认不创建，需在交互中明确选择。多租户下 `--tenant` 接受启用租户的 ID 或 slug；未指定时优先沿用可信上下文，否则多选目标租户。单站不传 `--tenant`。非交互运行只初始化权限。
+默认安装不创建演示数据；只有显式 `--demo` 才生成草稿。`--tenant` 必须与 `--demo` 一起使用，接受启用租户的 ID 或 slug；多租户非交互演示必须指定目标，交互时可沿用可信上下文或多选启用租户。单租户不传 `--tenant`，内容写入作用域 0。
 
 `Fayne\Menu\Database\Seeders\DemoMenuSeeder` 创建英文与简体中文的 `demo-main-navigation`、`demo-footer-navigation`，包括商品分类、账户、购物指南等示例链接。支持语言必须包含 `en` 及 `zh_CN`/`zh-CN`；Seeder 不修改语言配置。新菜单默认停用，示例节点启用。已有同 slug 的任一译本时跳过整组，不覆盖编辑。只创建导航数据，不创建商品、订单或目标页面。
 

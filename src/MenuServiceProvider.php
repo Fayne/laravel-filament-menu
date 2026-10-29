@@ -6,7 +6,7 @@ use Fayne\CMS\Events\PublicationSucceeded;
 use Fayne\CMS\Http\Middleware\ResolvePublicTenant;
 use Fayne\CMS\Http\Middleware\SelectContentRegion;
 use Fayne\CMS\Support\ReleaseSnapshotRegistry;
-use Fayne\Menu\Console\InitializeCommand;
+use Fayne\Menu\Console\InstallCommand;
 use Fayne\Menu\Policies\MenuComponentFieldPolicy;
 use Fayne\Menu\Policies\MenuComponentPolicy;
 use Fayne\Menu\Policies\MenuItemPolicy;
@@ -24,6 +24,9 @@ class MenuServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->callAfterResolving(\Fayne\CMS\Support\Authorization\PermissionRegistry::class, function ($registry): void {
+            $registry->register('menu', require __DIR__.'/../resources/permissions.php');
+        });
         $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'filament-menu');
         $this->app->afterResolving(ReleaseSnapshotRegistry::class, function ($registry): void {
             if (! isset($registry->all()['global_menu_definitions'])) {
@@ -50,7 +53,7 @@ class MenuServiceProvider extends ServiceProvider
         if (! $this->app->routesAreCached()) {
             Route::prefix(config('filament-cms.headless.prefix', 'headless'))->middleware(['api', ResolvePublicTenant::class])->group(__DIR__.'/../routes/headless.php');
         }
-        $this->commands([InitializeCommand::class]);
+        $this->commands([InstallCommand::class]);
         if (! $this->app->routesAreCached() && config('filament-menu.use_default_frontend_routes')) {
             Route::prefix('modules/menus')->middleware(['api', ResolvePublicTenant::class, SelectContentRegion::class])->name('modules.menus.')->group(__DIR__.'/../routes/frontend.php');
         }
