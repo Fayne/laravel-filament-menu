@@ -40,7 +40,7 @@ class MenuServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $this->publishes([__DIR__ . '/../database/migrations' => database_path('migrations')], 'filament-menu-migrations');
+        $this->publishes([__DIR__ . '/../database/migrations' => database_path('migrations')], ['filament-menu-migrations', 'cms-module-assets']);
         $this->replaceConfigRecursivelyFrom(__DIR__.'/../config/filament-menu.php', 'filament-menu');
 
         Event::listen(PublicationSucceeded::class, function ($event): void {
@@ -65,6 +65,6 @@ class MenuServiceProvider extends ServiceProvider
         Gate::policy(config('filament-menu.models.menu_component'), MenuComponentPolicy::class);
         Gate::policy(config('filament-menu.models.menu_item'), MenuItemPolicy::class);
         Gate::policy(config('filament-menu.models.menu'), MenuPolicy::class);
-        $this->publishes([__DIR__.'/../config/filament-menu.php' => config_path('filament-menu.php')], 'filament-menu-config');
+        $this->publishes([__DIR__.'/../config/filament-menu.php' => config_path('filament-menu.php')], ['filament-menu-config', 'cms-module-assets']);
     }
 }
