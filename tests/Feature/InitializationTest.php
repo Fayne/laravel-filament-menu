@@ -28,3 +28,23 @@ it('registers its own permissions without unrelated modules and preserves restri
         ->and($viewer->hasPermissionTo('tenant.viewSensitiveContentMenuItem'))->toBeFalse()
         ->and($manager->hasPermissionTo('tenant.executeContentHttpMenuItem'))->toBeTrue();
 });
+
+it('publishes its own config without replacing host customizations', function () {
+    $directory = sys_get_temp_dir() . '/menu-config-' . bin2hex(random_bytes(6));
+    mkdir($directory);
+    $original = app()->configPath();
+    app()->useConfigPath($directory);
+    try {
+        (new ReflectionMethod(\Illuminate\Support\ServiceProvider::class, 'publishes'))->invoke(app()->getProvider(\Fayne\Menu\MenuServiceProvider::class), [
+            dirname(__DIR__, 2) . '/config/filament-menu.php' => $directory . '/filament-menu.php',
+        ], 'filament-menu-config');
+        $this->artisan('cms:menu:install', ['--no-interaction' => true])->assertSuccessful();
+        expect(is_file($directory . '/filament-menu.php'))->toBeTrue();
+        file_put_contents($directory . '/filament-menu.php', '<?php return ["host_setting" => true];');
+        $this->artisan('cms:menu:install', ['--no-interaction' => true])->assertSuccessful();
+        expect(require $directory . '/filament-menu.php')->toBe(['host_setting' => true]);
+    } finally {
+        app()->useConfigPath($original);
+        \Illuminate\Support\Facades\File::deleteDirectory($directory);
+    }
+});
