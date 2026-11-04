@@ -208,3 +208,6 @@ composer format
 ## 整站冻结 API v2
 
 启用 Core 发布路由后，`/headless/releases/{release_id}/menus` 从不可变公共清单读取，不依赖当前区域、语言或路由配置。通过所属租户域名及构建 Bearer token 鉴权。存在多个范围时，菜单读取必须指定 `scope_id`；可选 `target_id` 必须与其匹配，未知或不兼容值返回 422。仅返回选中冻结范围及已解析公共链接，不暴露内部翻译组和连接信息；v1 API 保持兼容。
+
+
+本包权限名称、分组及标准操作由 `resources/permissions.php` 声明，中英文译文由本包 `resources/lang` 提供。CMS Core 仅汇总和解析，不再维护本包的业务名称映射。

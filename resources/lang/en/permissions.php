@@ -1,0 +1,3 @@
+<?php
+
+return ['groups' => ['menu' => 'Menu', 'menuitem' => 'Menu item', 'menucomponent' => 'Menu component', 'menucomponentfield' => 'Menu component field', 'menuwidget' => 'Menu widget', 'menuwidgetfield' => 'Menu widget field', 'operations' => 'Operations'], 'resources' => ['menu' => 'Menu', 'menuitem' => 'Menu item', 'menucomponent' => 'Menu component', 'menucomponentfield' => 'Menu component field', 'menuwidget' => 'Menu widget', 'menuwidgetfield' => 'Menu widget field'], 'custom' => ['tenant_viewSensitiveContentMenuItem' => 'View sensitive content menu item', 'tenant_executeContentHttpMenuItem' => 'Execute content http menu item']];

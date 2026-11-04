@@ -208,3 +208,6 @@ This software uses a [proprietary license](../LICENSE.md). Use and distribution 
 ## Whole-site frozen API v2
 
 With Core publication routing configured, `/headless/releases/{release_id}/menus` reads the immutable public bundle, independent of current region, locale or routing settings. Authenticate with the build Bearer token through the owning tenant domain. Menu reads require an explicit `scope_id` when multiple scopes are available; optional `target_id` must match it. Unknown or incompatible scopes/targets return 422. Each response contains only that frozen scope and its resolved public links; it excludes internal translation-group and connection metadata. V1 API responses remain compatible.
+
+
+Permission labels and groups are declared by this package in `resources/permissions.php`, with English and Simplified Chinese translations in `resources/lang`. CMS Core resolves the registered metadata without business-name matching.
