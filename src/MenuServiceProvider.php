@@ -40,6 +40,7 @@ class MenuServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->publishes([__DIR__ . '/../database/migrations' => database_path('migrations')], 'filament-menu-migrations');
         $this->replaceConfigRecursivelyFrom(__DIR__.'/../config/filament-menu.php', 'filament-menu');
 
         Event::listen(PublicationSucceeded::class, function ($event): void {
