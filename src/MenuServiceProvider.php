@@ -5,8 +5,11 @@ namespace Fayne\Menu;
 use Fayne\CMS\Events\PublicationSucceeded;
 use Fayne\CMS\Http\Middleware\ResolvePublicTenant;
 use Fayne\CMS\Http\Middleware\SelectContentRegion;
+use Fayne\CMS\Support\Authorization\PermissionRegistry;
+use Fayne\CMS\Support\Modules\ModuleRegistry;
 use Fayne\CMS\Support\ReleaseSnapshotRegistry;
 use Fayne\Menu\Console\InstallCommand;
+use Fayne\Menu\Filament\MenuPlugin;
 use Fayne\Menu\Policies\MenuComponentFieldPolicy;
 use Fayne\Menu\Policies\MenuComponentPolicy;
 use Fayne\Menu\Policies\MenuItemPolicy;
@@ -24,7 +27,10 @@ class MenuServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->callAfterResolving(\Fayne\CMS\Support\Authorization\PermissionRegistry::class, function ($registry): void {
+        $this->callAfterResolving(ModuleRegistry::class, function ($registry): void {
+            $registry->register('menu', 'Menu', MenuPlugin::class);
+        });
+        $this->callAfterResolving(PermissionRegistry::class, function ($registry): void {
             $registry->register('menu', require __DIR__.'/../resources/permissions.php');
         });
         $this->loadTranslationsFrom(__DIR__.'/../resources/lang', 'filament-menu');
@@ -40,7 +46,7 @@ class MenuServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $this->publishes([__DIR__ . '/../database/migrations' => database_path('migrations')], ['filament-menu-migrations', 'cms-module-assets']);
+        $this->publishes([__DIR__.'/../database/migrations' => database_path('migrations')], ['filament-menu-migrations', 'cms-module-assets']);
         $this->replaceConfigRecursivelyFrom(__DIR__.'/../config/filament-menu.php', 'filament-menu');
 
         Event::listen(PublicationSucceeded::class, function ($event): void {
